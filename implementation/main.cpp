@@ -1,6 +1,5 @@
 #include "library.h"
 #include "../include/jcPKCS11.h"
-#include "../include/P11Loader.h"
 
 #include <iostream>
 
@@ -67,10 +66,14 @@ int main()
          Throw( "C_FindObjectsFinal() != CKR_OK" );
       for( CK_ULONG it = 0; it < certificates_handle_count; ++it )
       {
-         P11Loader& loader = GetLoader();
          CK_CHAR_PTR p_certificate_info;
          CK_ULONG certificate_info_length;
-         if( ( rv = CALL_EXT( getCertificateInfo( session_handle, certificates_handle_array[ it ], &p_certificate_info, &certificate_info_length ) ) ) != CKR_OK )
+
+         typedef unsigned long( *PGetCertificateInfo )( unsigned long, unsigned long, unsigned char**, unsigned long* );
+         PGetCertificateInfo p_get_certificate_info = ( PGetCertificateInfo )GetProcAddress( Library::Instance().PHandle(), "getCertificateInfo" );
+         if( p_get_certificate_info == nullptr )
+            Throw( "GetProcAddress( getCertificateInfo ) ) == nullptr" );
+         if( ( rv = p_get_certificate_info( session_handle, certificates_handle_array[ it ], &p_certificate_info, &certificate_info_length ) ) != CKR_OK )
             Throw( "getCertificateInfo() != CKR_OK" );
          std::cout << "certificate_info = " << p_certificate_info << std::endl;
       }
