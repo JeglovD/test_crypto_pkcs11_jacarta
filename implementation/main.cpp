@@ -1,5 +1,6 @@
 #include "library.h"
 #include "../include/jcPKCS11.h"
+#include "../include/P11Loader.h"
 
 #include <iostream>
 
@@ -33,30 +34,46 @@ int main()
    if( !slots_count )
       Throw( "JaCarta smart cards not found" );
    std::cout << "slot_count = " << slots_count << std::endl;
-   CK_SLOT_ID_PTR p_slots = ( CK_SLOT_ID_PTR )malloc( sizeof( CK_SLOT_ID ) * slots_count );
-   if( ( rv = p_function_list->C_GetSlotList( CK_TRUE, p_slots, &slots_count ) ) != CKR_OK )
+   CK_SLOT_ID_PTR slots_array = ( CK_SLOT_ID_PTR )malloc( sizeof( CK_SLOT_ID ) * slots_count );
+   if( ( rv = p_function_list->C_GetSlotList( CK_TRUE, slots_array, &slots_count ) ) != CKR_OK )
       Throw( "C_GetSlotList( p_slots, &slots_count ) != CKR_OK" );
 
    for( CK_ULONG it = 0; it < slots_count; ++it )
    {
       // Получаем информацию о токене
       CK_TOKEN_INFO token_info = {};
-      if( ( rv = p_function_list->C_GetTokenInfo( p_slots[ it ], &token_info ) ) != CKR_OK )
+      if( ( rv = p_function_list->C_GetTokenInfo( slots_array[ it ], &token_info ) ) != CKR_OK )
          Throw( "C_GetTokenInfo() != CKR_OK" );
       std::cout << "token_info.model = " << token_info.model << std::endl;
 
       // Открываем сессию
       CK_SESSION_HANDLE session_handle;
-      if( ( rv = p_function_list->C_OpenSession( p_slots[ it ], ( CKF_SERIAL_SESSION | CKF_RW_SESSION ), nullptr, nullptr, &session_handle ) ) != CKR_OK )
+      if( ( rv = p_function_list->C_OpenSession( slots_array[ it ], ( CKF_SERIAL_SESSION | CKF_RW_SESSION ), nullptr, nullptr, &session_handle ) ) != CKR_OK )
          Throw( "C_OpenSession() != CKR_OK" );
 
       // Получаем информацию о сертификатах
       CK_ULONG certificate_class = CKO_CERTIFICATE;
-      CK_ATTRIBUTE certificate_attributes[] =
+      CK_ATTRIBUTE certificate_attributes_array[] =
       {
          { CKA_CLASS, &certificate_class, sizeof( certificate_class ) }
       };
-      p_function_list->C_FindObjectsInit( session_handle, certificate_attributes, sizeof( certificate_attributes ) / sizeof( CK_ATTRIBUTE ) );
+      if( ( p_function_list->C_FindObjectsInit( session_handle, certificate_attributes_array, sizeof( certificate_attributes_array ) / sizeof( CK_ATTRIBUTE ) ) ) != CKR_OK )
+         Throw( "C_FindObjectsInit() != CKR_OK" );
+      CK_OBJECT_HANDLE certificates_handle_array[ 128 ];
+      CK_ULONG certificates_handle_count;
+      if( ( rv = p_function_list->C_FindObjects( session_handle, certificates_handle_array, sizeof( certificates_handle_array ) / sizeof( CK_OBJECT_HANDLE ), &certificates_handle_count ) ) != CKR_OK )
+         Throw( "C_FindObjects() != CKR_OK" );
+      if( ( rv = p_function_list->C_FindObjectsFinal( session_handle ) ) != CKR_OK )
+         Throw( "C_FindObjectsFinal() != CKR_OK" );
+      for( CK_ULONG it = 0; it < certificates_handle_count; ++it )
+      {
+         P11Loader& loader = GetLoader();
+         CK_CHAR_PTR p_certificate_info;
+         CK_ULONG certificate_info_length;
+         if( ( rv = CALL_EXT( getCertificateInfo( session_handle, certificates_handle_array[ it ], &p_certificate_info, &certificate_info_length ) ) ) != CKR_OK )
+            Throw( "getCertificateInfo() != CKR_OK" );
+         std::cout << "certificate_info = " << p_certificate_info << std::endl;
+      }
 
       // Закрываем сессию
       if( ( rv = p_function_list->C_CloseSession( session_handle ) ) != CKR_OK )
