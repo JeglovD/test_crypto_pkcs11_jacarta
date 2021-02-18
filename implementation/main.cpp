@@ -76,8 +76,9 @@ int main()
          certificate_values_template.pValue = certificate_value.data();
          if( ( rv = p_function_list->C_GetAttributeValue( session_handle, certificates_handle_array[ it ], &certificate_values_template, 1 ) ) != CKR_OK )
             Throw( "C_GetAttributeValue() != CKR_OK" );
+         std::cout << "certificate_values_template.pValue = ";
          for( auto& it: certificate_value )
-            std::cout << std::hex << ( unsigned int )it;
+            std::cout << std::hex << static_cast< unsigned short >( it );
          std::cout << std::endl;
       }
 
