@@ -14,5 +14,5 @@ private:
    Library( const Library& ) = delete;
    Library& operator=( Library& ) = delete;
 
-   HMODULE mPHandle{ nullptr };
+   HMODULE mHandlePtr{ nullptr };
 };

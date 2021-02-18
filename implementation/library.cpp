@@ -7,18 +7,18 @@ Library& Library::Instance()
 }
 
 Library::Library():
-   mPHandle{ LoadLibrary( "..\\lib\\jcPKCS11-2.dll" ) }
+   mHandlePtr{ LoadLibrary( "..\\lib\\jcPKCS11-2.dll" ) }
 {
-   if( !mPHandle )
-      throw "!mPHandle";
+   if( !mHandlePtr )
+      throw "!mHandlePtr";
 }
 
 Library::~Library()
 {
-   FreeLibrary( mPHandle );
+   FreeLibrary( mHandlePtr );
 }
 
 const HMODULE& Library::PHandle()
 {
-   return mPHandle;
+   return mHandlePtr;
 }
