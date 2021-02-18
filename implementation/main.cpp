@@ -2,6 +2,7 @@
 #include "../include/jcPKCS11.h"
 
 #include <iostream>
+#include <vector>
 
 void Throw( std::string message )
 {
@@ -64,26 +65,20 @@ int main()
          Throw( "C_FindObjects() != CKR_OK" );
       if( ( rv = p_function_list->C_FindObjectsFinal( session_handle ) ) != CKR_OK )
          Throw( "C_FindObjectsFinal() != CKR_OK" );
-//      for( CK_ULONG it = 0; it < certificates_handle_count; ++it )
-//      {
-//         CK_CHAR_PTR p_certificate_info;
-//         CK_ULONG certificate_info_length;
-//         typedef unsigned long( *PGetCertificateInfo )( unsigned long, unsigned long, unsigned char**, unsigned long* );
-//         PGetCertificateInfo p_get_certificate_info = ( PGetCertificateInfo )GetProcAddress( Library::Instance().PHandle(), "getCertificateInfo" );
-//         if( p_get_certificate_info == nullptr )
-//            Throw( "GetProcAddress( getCertificateInfo ) ) == nullptr" );
-//         if( ( rv = p_get_certificate_info( session_handle, certificates_handle_array[ it ], &p_certificate_info, &certificate_info_length ) ) != CKR_OK )
-//            Throw( "getCertificateInfo() != CKR_OK" );
-//         std::cout << "certificate_info = " << p_certificate_info << std::endl;
-//      }
       for( CK_ULONG it = 0; it < certificates_handle_count; ++it )
       {
-         CK_BYTE certificate_body[ 3200 ];
-         CK_ULONG certificate_body_length = sizeof( certificate_body );
-         CK_ATTRIBUTE certificate_value_template = { CKA_VALUE, certificate_body, certificate_body_length };
-         if( ( rv = p_function_list->C_GetAttributeValue( session_handle, certificates_handle_array[ it ], &certificate_value_template, 1 ) ) != CKR_OK )
+         CK_ATTRIBUTE certificate_values_template{ CKA_VALUE, nullptr, 0 };
+         if( ( rv = p_function_list->C_GetAttributeValue( session_handle, certificates_handle_array[ it ], &certificate_values_template, 1 ) ) != CKR_OK )
             Throw( "C_GetAttributeValue() != CKR_OK" );
-         std::cout << "certificate_value_template.pValue = " << certificate_value_template.pValue << std::endl;
+         std::cout << "certificate_values_template.ulValueLen = " << certificate_values_template.ulValueLen << std::endl;
+         std::vector< unsigned char > certificate_value{};
+         certificate_value.resize( certificate_values_template.ulValueLen );
+         certificate_values_template.pValue = certificate_value.data();
+         if( ( rv = p_function_list->C_GetAttributeValue( session_handle, certificates_handle_array[ it ], &certificate_values_template, 1 ) ) != CKR_OK )
+            Throw( "C_GetAttributeValue() != CKR_OK" );
+         for( auto& it: certificate_value )
+            std::cout << std::hex << ( unsigned int )it;
+         std::cout << std::endl;
       }
 
       // Закрываем сессию
