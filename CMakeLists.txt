@@ -1,5 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.5.2)
-project( test )
+project( jacarta )
 add_executable( 
     ${PROJECT_NAME}
     implementation/main.cpp

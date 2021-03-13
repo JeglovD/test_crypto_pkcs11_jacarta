@@ -14,8 +14,13 @@ int main()
 {
    // Получить адрес функции для получения структуры с указателями на функции
    CK_C_GetFunctionList get_function_list_ptr{ nullptr };
-   if( ( get_function_list_ptr = ( CK_C_GetFunctionList )GetProcAddress( Library::Instance().PHandle(), "C_GetFunctionList" ) ) == nullptr )
+#ifdef windows
+   if( ( get_function_list_ptr = ( CK_C_GetFunctionList )GetProcAddress( Library::Instance().HandlePtr(), "C_GetFunctionList" ) ) == nullptr )
       Throw( "GetProcAddress( C_GetFunctionList ) == nullptr" );
+#elif unix
+   if( ( get_function_list_ptr = ( CK_C_GetFunctionList )dlsym( Library::Instance().HandlePtr(), "C_GetFunctionList" ) ) == nullptr )
+       Throw( "dlsym( C_GetFunctionList ) == nullptr" );
+#endif
 
    // Получить структуру с указателями на функции
    CK_RV rv;
