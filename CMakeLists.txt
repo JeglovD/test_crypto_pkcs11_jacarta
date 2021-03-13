@@ -10,3 +10,5 @@ if (${CMAKE_GENERATOR} MATCHES Win64)
 else()
     add_definitions("-DBUILD_WIN32")
 endif()
+
+target_link_libraries(${PROJECT_NAME} dl)

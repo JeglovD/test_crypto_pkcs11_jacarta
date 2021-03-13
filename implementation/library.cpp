@@ -10,7 +10,7 @@ Library::Library():
 #ifdef windows
     mHandlePtr{ LoadLibrary( "..\\lib\\jcPKCS11-2.dll" ) }
 #elif unix
-    mHandlePtr{ dlopen( "..\\lib\\jcPKCS11-2.dll", RTLD_LAZY ) }
+    mHandlePtr{ dlopen( "../lib/libjcPKCS11-2.so", RTLD_LAZY ) }
 #endif
 {
     if( !mHandlePtr )
